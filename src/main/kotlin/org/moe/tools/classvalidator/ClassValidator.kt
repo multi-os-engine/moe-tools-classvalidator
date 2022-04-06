@@ -6,8 +6,12 @@ import org.moe.tools.classvalidator.natj.AddMissingNatJRegister
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.file.Path
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 object ClassValidator {
     fun process(
@@ -30,6 +34,19 @@ object ClassValidator {
                 }
 
                 classSaver.save(byteCode)
+            }
+            // TODO: This is really hacky, since r8 seems to only understand jars, not dirs
+            val inputDirectory = outputDir.resolve(OUTPUT_CLASSES).toFile()
+            val outputZipFile = outputDir.resolve("output.jar").toFile()
+            ZipOutputStream(BufferedOutputStream(FileOutputStream(outputZipFile))).use { zos ->
+                inputDirectory.walkTopDown().forEach { file ->
+                    val zipFileName = file.absolutePath.removePrefix(inputDirectory.absolutePath).removePrefix("/")
+                    val entry = ZipEntry( "$zipFileName${(if (file.isDirectory) "/" else "" )}")
+                    zos.putNextEntry(entry)
+                    if (file.isFile) {
+                        file.inputStream().copyTo(zos)
+                    }
+                }
             }
         }
     }
