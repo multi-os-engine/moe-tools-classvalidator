@@ -2,6 +2,7 @@ package org.moe.tools.classvalidator.natj
 
 import org.moe.tools.classvalidator.getParentImplementation
 import org.moe.tools.classvalidator.toClass
+import org.moe.tools.classvalidator.ClassModifier
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
@@ -11,7 +12,7 @@ import java.lang.reflect.AnnotatedElement
 
 class AddMissingAnnotations(
     next: ClassVisitor?
-) : ClassVisitor(Opcodes.ASM5, next) {
+) : ClassModifier(Opcodes.ASM5, next) {
     private var skip: Boolean = false
     private var superName: String? = null
     private var interfaces: Array<out String>? = null
@@ -130,6 +131,7 @@ class AddMissingAnnotations(
                         }
                     }
                 }
+                markAsModified()
             }
 
             private fun convertClassToType(value: Any): Any {

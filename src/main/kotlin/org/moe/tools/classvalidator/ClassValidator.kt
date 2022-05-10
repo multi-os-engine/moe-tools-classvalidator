@@ -1,35 +1,44 @@
 package org.moe.tools.classvalidator
 
-import org.moe.common.utils.classAndJarInputIterator
+import org.moe.common.utils.classpathIterator
 import org.moe.tools.classvalidator.natj.AddMissingAnnotations
 import org.moe.tools.classvalidator.natj.AddMissingNatJRegister
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import java.io.File
-import java.nio.file.Path
 
 object ClassValidator {
     fun process(
-        inputFiles: Set<File>,
-        outputDir: Path,
-        classpath: Set<File>,
+            inputFiles: Set<File>,
+            classpath: Set<File>,
     ) {
         ContextClassLoaderHolder(
-            ChildFirstClassLoader(classpath.map { it.toURI().toURL() }.toTypedArray())
+                ChildFirstClassLoader(classpath.map { it.toURI().toURL() }.toTypedArray())
         ).use {
-            val classSaver = ClassSaver(outputDir.resolve(OUTPUT_CLASSES))
+            inputFiles.forEach { jar ->
+                jar.classpathIterator({ _, inputStream ->
+                    val classSaver = ClassSaver(jar.absoluteFile.toPath())
+                    val cr = ClassReader(inputStream)
 
-            inputFiles.classAndJarInputIterator { _, inputStream ->
-                val cr = ClassReader(inputStream)
+                    val chain = mutableListOf<ClassVisitor>()
+                    fun ClassVisitor.chain(nextBuilder: (ClassVisitor) -> ClassVisitor): ClassVisitor {
+                        val next = nextBuilder(this)
+                        chain.add(next)
+                        return next
+                    }
 
-                val byteCode = processClass(cr) { next ->
-                    next
-                        .let(::AddMissingAnnotations)
-                        .let(::AddMissingNatJRegister)
-                }
+                    val byteCode = processClass(cr) { next ->
+                        next
+                                .chain(::AddMissingAnnotations)
+                                .chain(::AddMissingNatJRegister)
+                    }
 
-                classSaver.save(byteCode)
+                    // Only save modified class
+                    if (chain.any { it is ClassModifier && it.modified }) {
+                        classSaver.save(byteCode)
+                    }
+                }, { it.endsWith(".class") })
             }
         }
     }
@@ -47,6 +56,4 @@ object ClassValidator {
 
         return writer.toByteArray()
     }
-
-    const val OUTPUT_CLASSES = "classes"
 }

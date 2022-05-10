@@ -1,7 +1,7 @@
 package org.moe.tools.classvalidator
 
-import org.moe.common.utils.prepareDir
 import org.objectweb.asm.ClassReader
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -14,8 +14,11 @@ internal class ClassSaver(
         }
 
         val cr = ClassReader(bytecode)
-        val outputFile = outputDir.resolve(cr.className + ".class")
-        outputFile.parent.prepareDir()
-        Files.write(outputFile, bytecode)
+        // In jar replacement
+        val fileSystem = FileSystems.newFileSystem(outputDir, null)
+        fileSystem.use {
+            val outputFile = it.getPath(cr.className + ".class")
+            Files.write(outputFile, bytecode)
+        }
     }
 }
