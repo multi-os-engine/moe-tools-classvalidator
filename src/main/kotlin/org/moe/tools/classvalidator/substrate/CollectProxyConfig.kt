@@ -9,7 +9,7 @@ import java.lang.reflect.Modifier
 class CollectProxyConfig(
     private val config: ProxyConfig,
     next: ClassVisitor? = null,
-) : ClassVisitor(Opcodes.ASM5, next) {
+) : ClassVisitor(Opcodes.ASM9, next) {
 
     private lateinit var name: String
     private var isInterface: Boolean = false
