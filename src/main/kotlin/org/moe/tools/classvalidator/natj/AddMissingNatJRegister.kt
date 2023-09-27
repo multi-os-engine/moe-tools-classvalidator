@@ -15,7 +15,7 @@ import java.lang.reflect.Modifier
  */
 class AddMissingNatJRegister(
     next: ClassVisitor?
-) : ClassModifier(Opcodes.ASM5, next) {
+) : ClassModifier(Opcodes.ASM9, next) {
 
     private var skip: Boolean = false
     private var visit: Boolean = false
@@ -115,16 +115,6 @@ class AddMissingNatJRegister(
         }
 
         super.visitEnd()
-    }
-
-    override fun visitNestHost(nestHost: String?) {
-        // Do nothing
-        // Fix error "NestHost requires ASM7" without the need of updating to ASM7
-    }
-
-    override fun visitNestMember(nestMember: String?) {
-        // Do nothing
-        // Fix error "NestMember requires ASM7" without the need of updating to ASM7
     }
 
     companion object {
